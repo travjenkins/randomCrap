@@ -1,7 +1,4 @@
 var application = {
-        "session" : {
-            "emailsEntered" : []
-        },
         "generateRandom": {
             "alphaNumeric" : function (settings) {
                 //Taken from: http://stackoverflow.com/questions/1349404/generate-a-string-of-5-random-characters-in-javascript
@@ -63,13 +60,15 @@ var application = {
         }
     };
 
-Selenium.prototype.doTypeRandomEmail = function (locator) {
+Selenium.prototype.doTypeRandomEmail = function (locator, text) {
     var address = "",
         data = "",
         domain = "",
-        element = this.page().findElement(locator);
+        element = this.page().findElement(locator),
+        skipStoredValue = "forceNew",
+        storeValueKey = "lastRandomEmailEntered";
 
-    if (data === "" && element !== null) {
+    if (typeof storedVars[storeValueKey] === "undefined" || text === skipStoredValue) {
         address = application.generateRandom.alphaNumeric({
             "maxLength": 10
         });
@@ -79,15 +78,13 @@ Selenium.prototype.doTypeRandomEmail = function (locator) {
         });
 
         data = address + "@" + domain + "." + application.generateRandom.topLevelDomain();
+
+        storedVars[storeValueKey] = data;
+        
+        LOG.info("The generated email was stored under the key '" + storeValueKey + "'");
+    } else {
+        LOG.warn("'" + storeValueKey + "' already exists. Using that value. Set value='" + skipStoredValue + "' to generate and enter a new email.");
     }
 
-    this.browserbot.replaceText(element, data);
-    application.session.emailsEntered.push(data);
-};
-
-Selenium.prototype.doGetRandomEmail = function (locator) {
-    var data = "",
-        element = this.page().findElement(locator);
-
-    LOG.info("blubber = " + application.session.emailsEntered);
+    this.browserbot.replaceText(element, storedVars[storeValueKey]);
 };
