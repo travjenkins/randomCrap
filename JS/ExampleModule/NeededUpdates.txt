@@ -1,0 +1,6 @@
+Needed updates:
+1. Make bindevents and listen share what they can
+2. Errors in the create class if the user does not provide everything it needs
+3. Allow the deep extend be configurable?
+4. Look through events and messages with the same function
+5. Allow event and message bus to be passed in from the implementor
