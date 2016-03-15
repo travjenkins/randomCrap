@@ -1,0 +1,417 @@
+define([
+	"checkoutServices/common/legacyMapper",
+	"checkoutSections/body",
+	"checkoutSections/cart",
+	"checkoutSections/shipping",
+	"checkoutSections/payment",
+	"checkoutSections/summary",
+	"checkoutSections/address",
+	"checkoutSections/addressBook",
+	"checkoutSections/addressBookModal",
+	"checkoutSections/addressMessage",
+	"checkoutSections/loyalty",
+	"checkoutSections/informational",
+	"checkoutSections/contactInfo",
+	"checkoutSections/header",
+	"checkoutSections/billing",
+	"checkoutSections/shippingWithTabs",
+	"checkoutSections/dynamicCurrencyModal",
+	"checkoutSections/paymentConfirmation",
+	"checkoutSections/shippingConfirmation"],
+function (legacyMapper, body, cart, shipping, payment, summary, address, addressBook, addressBookModal, addressMessage, loyalty, informational, contactInfo, header, billing, shippingWithTabs, dynamicCurrencyModal, paymentConfirmation, shippingConfirmation) {
+	"use strict";
+
+	var mainFunction = function () {
+		ANF.checkoutV2 = (function () {
+			var privateMembers = {
+				"bodyID": $("body").attr("id") || ""
+			};
+
+			var publicMembers = {
+				"init": function () {
+					if (ANF.params.storeAttributes.checkoutV2 &&
+							ANF.params.storeAttributes.checkoutV2.enabled) {
+						publicMembers.startUpSections(publicMembers.sections);
+					}
+
+					dynamicCurrencyModal({
+						"scope": ""
+					});
+					ANF.checkoutV2.dynamicCurrencyModal.init();
+				},
+				"ajaxInContent": function () {
+					if (publicMembers.conditionals.isShipping()) {
+						$(ANF).trigger("shipping:load");
+					}
+
+					if (publicMembers.conditionals.isReceiptPage()) {
+						$(ANF).trigger("informational:load");
+
+						if (publicMembers.conditionals.isLoyalty()) {
+							$(ANF).trigger("loyalty:load");
+						}
+					}
+
+					if (publicMembers.conditionals.isShoppingBag()) {
+						$(ANF).trigger("cart:load");
+					} else {
+						$(ANF).trigger("summary:load");
+					}
+				},
+				"defaultSectionStart": function (section, currentSection) {
+					currentSection.section(currentSection.settings);
+
+					if (typeof ANF.checkoutV2[section] === "object") {
+						if (typeof ANF.checkoutV2[section].subscribe === "function") {
+							ANF.checkoutV2[section].subscribe();
+						}
+						if (typeof ANF.checkoutV2[section].init === "function") {
+							ANF.checkoutV2[section].init();
+						}
+					}
+				},
+				"startUpSections": function (sections) {
+					var conditionPass = false,
+						currentSection = null,
+						section = null,
+						sectionType = "";
+
+					for (section in sections) {
+						if (sections.hasOwnProperty(section)) {
+							currentSection = sections[section];
+							sectionType = typeof currentSection;
+
+							if (sectionType === "function") {
+								currentSection();
+							} else if (sectionType === "object" && currentSection !== null) {
+								if (typeof currentSection.condition === "boolean") {
+									conditionPass = currentSection.condition;
+								} else if (typeof currentSection.condition === "function") {
+									conditionPass = currentSection.condition();
+								}
+
+								if (conditionPass) {
+									publicMembers.defaultSectionStart(section, currentSection);
+								}
+							}
+						}
+					}
+				}
+			};
+			
+			publicMembers.conditionals = {
+				"isCheckout": function () {
+					return (privateMembers.bodyID.indexOf("checkout-") === 0);
+				},
+				"isShipping": function () {
+					return (privateMembers.bodyID.indexOf("shipping") > 0);
+				},
+				"isPaymentPage": function () {
+					return (privateMembers.bodyID.indexOf("payment") > 0);
+				},
+				"isSummary": function () {
+					return (privateMembers.bodyID.indexOf("summary") > 0);
+				},
+				"isLoyalty": function () {
+					var loyaltyEnabled = ANF.params.storeAttributes.loyalty.enabled;
+
+					return (loyaltyEnabled === true) ? true : false;
+				},
+				"isLoggedIn": function () {
+					return ($("body").attr("data-loggedin") === "true");
+				},
+				"isShoppingBag": function () {
+					return $("body").hasClass("cart-view");
+				},
+				"hasRewardsSection": function () {
+					return ($("#rewards").length >= 1) ? true : false;
+				},
+				"hasEstimatedPointsSection": function () {
+					return ($(".estimated-reward-points").length >= 1) ? true : false;
+				},
+				"hasPotentialPointsSection": function () {
+					return ($(".potential-reward-points").length >= 1) ? true : false;
+				},
+				"isReceiptPage": function () {
+					return $("body").hasClass("receipt-view");
+				},
+				"hasContactInfoSection": function () {
+					return ($("#billing-contact-info").length >= 1) ? true : false;
+				},
+				"hasBillingAddressSection": function () {
+					return ($("#billing").length >= 1) ? true : false;
+				},
+				"isCheckoutStep3": function () {
+					return (privateMembers.bodyID.indexOf("checkout-summary") === 0);
+				},
+				"hasCheckoutV2": {
+					"addressBook": function () {
+						return (!publicMembers.conditionals.isLoggedIn() &&
+								publicMembers.conditionals.hasCheckoutV2.addressForm() &&
+								ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook &&
+								ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook.enabled);
+					},
+					"addressForm": function () {
+						var guestUserConfig = null,
+							guestUserEnabled = null,
+							loggedInUserEnabled = null,
+							loggedInUserUserConfig = null,
+							newForm = null,
+							shippinAddressEnable = null,
+							shippingAddressConfig = null,
+							userLogedIn = null;
+
+						shippingAddressConfig = ANF.params.storeAttributes.checkoutV2.shippingAddress || {};
+						userLogedIn = publicMembers.conditionals.isLoggedIn();
+						shippinAddressEnable = shippingAddressConfig.enabled || false;
+						loggedInUserUserConfig = shippingAddressConfig.loggedInUser || {};
+						loggedInUserEnabled = loggedInUserUserConfig.enabled || false;
+						guestUserConfig = shippingAddressConfig.guestUser || {};
+						guestUserEnabled = guestUserConfig.enabled || false;
+						newForm = $("#address-book-wrap.newFeature");
+
+						//This logic is in 3 files - please keep them in sync
+						//   /StaticWeb/WebContent/checkout/base/js/pages/checkout.js
+						//   /StaticWeb/WebContent/base/content/js/site/checkout/shipping.js
+						//   //StaticWeb/WebContent/base/js/site/checkout/shipping.js
+						return (publicMembers.conditionals.isShipping() && (shippinAddressEnable && newForm && newForm.length > 0) && ((userLogedIn && loggedInUserEnabled) || (!userLogedIn && guestUserEnabled)));
+					},
+					"shippingMethods": function () {
+						var shippingMethodsConfig = ANF.params.storeAttributes.checkoutV2.shippingMethod || {},
+							shippingMethodsEnabled = shippingMethodsConfig.enabled || false,
+							hasShippingMethodsContainer = ($("#shipping-method").length >= 1) ? true : false;
+
+						return (shippingMethodsEnabled && hasShippingMethodsContainer);
+					}
+				}
+			};
+
+			publicMembers.sections = {
+				"addressBook": {
+					"condition": publicMembers.conditionals.hasCheckoutV2.addressBook,
+					"section": addressBook,
+					"settings": {
+						"scope": "#address-book-wrapper"
+					}
+				},
+				"addressBookModal": {
+					"condition": publicMembers.conditionals.hasCheckoutV2.addressBook,
+					"section": addressBookModal,
+					"settings": {
+						"scope": ".simplemodal-container"
+					}
+				},
+				"addressMessage": {
+					"condition": publicMembers.conditionals.hasCheckoutV2.addressForm,
+					"section": addressMessage,
+					"settings": {
+						"scope": ".shipping-address"
+					}
+				},
+				"body": {
+					"condition": publicMembers.conditionals.isCheckout,
+					"section": body,
+					"settings": {
+						"scope": "body.checkoutV2"
+					}
+				},
+				"cart": {
+					"condition": publicMembers.conditionals.isShoppingBag,
+					"section": cart,
+					"settings": {
+						"scope": "#checkout-cart",
+						"isLoyalty": publicMembers.conditionals.isLoyalty(),
+						"rewardsSectionExists": publicMembers.conditionals.hasRewardsSection()
+					}
+				},
+				"header": {
+					"condition": true,
+					"section": header,
+					"settings": {
+						"scope": "#header-nav"
+					}
+				},
+				"contactInfo": {
+					"condition": publicMembers.conditionals.hasContactInfoSection,
+					"section": contactInfo,
+					"settings": {
+						"scope": "#billing-contact-info"
+					}
+				},
+				"informational": {
+					"condition": publicMembers.conditionals.isReceiptPage,
+					"section": informational,
+					"settings": {
+						"scope": ".user-info",
+						"isLoyalty": publicMembers.conditionals.isLoyalty(),
+						"estimatedPointsExists": publicMembers.conditionals.hasEstimatedPointsSection()
+					}
+				},
+				"loyalty": {
+					"condition": publicMembers.conditionals.isLoyalty,
+					"section": loyalty,
+					"settings": {
+						"scope": ".loyalty",
+						"isLoyalty": publicMembers.conditionals.isLoyalty(),
+						"potentialPointsExists": publicMembers.conditionals.hasPotentialPointsSection()
+					}
+				},
+				"payment": {
+					"condition": publicMembers.conditionals.isPaymentPage,
+					"section": payment,
+					"settings": {
+						"scope": "#payment-options"
+					}
+				},
+				"summary": {
+					"condition": !publicMembers.conditionals.isShoppingBag(),
+					"section": summary,
+					"settings": {
+						"scope": ".promotions, #rewards, .shopping-bag-wrap, #price-summary-wrapper",
+						"isLoyalty": publicMembers.conditionals.isLoyalty(),
+						"rewardsSectionExists": publicMembers.conditionals.hasRewardsSection()
+					}
+				},
+				"shippingWithTabs": {
+					"condition": publicMembers.conditionals.isShipping,
+					"section": shippingWithTabs,
+					"settings": {
+						"scope": "#shipping-tabs"
+					}
+				},
+				"billing": {
+					"condition": publicMembers.conditionals.hasBillingAddressSection,
+					"section": billing,
+					"settings": {
+						"scope": "#billing"
+					}
+				},
+				"paymentConfirmation": {
+					"condition": publicMembers.conditionals.isCheckoutStep3,
+					"section": paymentConfirmation,
+					"settings": {
+						"scope": "#checkout-summary"
+					}
+				},
+				"shippingConfirmation": {
+					"condition": publicMembers.conditionals.isReceiptPage,
+					"section": shippingConfirmation,
+					"settings": {
+						"scope": "#shipping-options"
+					}
+				}
+			};
+			
+			publicMembers.legacyReplacements = {
+				"updateShippingForm": function (data) {
+					var response = null;
+
+					if (typeof data === "object" && data.isPopinsCall === true) {
+						response = true;
+					} else {
+						response = ANF.checkoutV2.address.load.addressFormContent();
+					}
+
+
+					return response;
+				},
+				"updateShippingMethod": function () {
+					var event = {
+							"data": {
+								"legacyMapperCall": true
+							}
+						};
+
+					return ANF.checkoutV2.shipping.load.shippingMethodsContent(event);
+				}
+			};
+
+			publicMembers.sections.address = function () {
+				var addressInitResponse = {},
+					globalLegacySettings = {
+						"oldNameSpace": ANF.checkout.global,
+						"replacements": []
+					},
+					shippingLegacySettings = {
+						"oldNameSpace": ANF.checkout.shipping,
+						"replacements": []
+					},
+					settings = {
+						"scope": ".address__wrapper"
+					},
+					startShippingAddress = publicMembers.conditionals.hasCheckoutV2.addressForm(),
+					startShippingMethods = publicMembers.conditionals.hasCheckoutV2.shippingMethods();
+
+				if (startShippingAddress === true || startShippingMethods === true) {
+					address(settings);
+					addressInitResponse = ANF.checkoutV2.address.init();
+					ANF.checkoutV2.address.subscribe();
+				}
+
+				if (startShippingAddress === true) {
+					globalLegacySettings.replacements.push(
+						{
+							"functionToReplace": "updateShippingForm",
+							"newFunction" : publicMembers.legacyReplacements.updateShippingForm
+						}
+					);
+					shippingLegacySettings.replacements.push(
+						{
+							"functionToReplace": "poDetect",
+							"newFunction" : $.noop
+						}
+					);
+				}
+
+				if (globalLegacySettings.replacements.length > 0) {
+					legacyMapper.replace(globalLegacySettings);
+				}
+
+
+				if (shippingLegacySettings.replacements.length > 0) {
+					legacyMapper.replace(shippingLegacySettings);
+				}
+			};
+
+			publicMembers.sections.shipping = function () {
+				var legacySettings = {
+						"oldNameSpace": ANF.checkout.global,
+						"replacements": []
+					},
+					settings = {
+						"loadLegacy": publicMembers.conditionals.isShipping(),
+						"scope": "#shipping-form"
+					},
+					startShippingMethods = publicMembers.conditionals.hasCheckoutV2.shippingMethods();
+
+				if (startShippingMethods === true) {
+
+					shipping(settings);
+					ANF.checkoutV2.shipping.init();
+					ANF.checkoutV2.shipping.subscribe();
+
+					//Legacy support. Since the summary page loads the default shipping options we want to hide them
+					// But we only want to do it if we are going to start up our shipping methods
+					$("#checkout-summary #ship-methods").addClass("hidden");
+					$("#checkout-summary h2.shipping-method").addClass("hidden");
+
+					legacySettings.replacements.push({
+						"functionToReplace": "updateShippingMethod",
+						"newFunction": publicMembers.legacyReplacements.updateShippingMethod
+					});
+
+					legacyMapper.replace(legacySettings);
+				}
+			};
+
+			return publicMembers;
+		})($, ANF);
+
+		ANF.deferredStart = ANF.deferredStart || $.Deferred();
+
+		ANF.deferredStart.then(ANF.checkoutV2.init);
+		ANF.deferredStart.then(ANF.checkoutV2.ajaxInContent);
+	};
+
+	return mainFunction;
+});

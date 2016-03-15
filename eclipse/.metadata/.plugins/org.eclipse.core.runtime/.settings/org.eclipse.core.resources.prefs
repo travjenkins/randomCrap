@@ -1,0 +1,6 @@
+#Thu Oct 15 10:20:03 EDT 2015
+version=1
+eclipse.preferences.version=1
+description.autobuilding=false
+description.buildorder=DataLoad/StaticWeb/Stores
+description.defaultbuildorder=false

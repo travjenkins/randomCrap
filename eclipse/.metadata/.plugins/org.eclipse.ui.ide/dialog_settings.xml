@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.dialogs.FilteredResourcesSelectionDialog">
+		<item value="true" key="ShowStatusLine"/>
+		<item value="false" key="ShowDerived"/>
+		<item value="false" key="FilterByLocation"/>
+		<item value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#x0A;&lt;workingSet workingSetName=&quot;&quot;/&gt;" key="WorkingSet"/>
+		<item value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#x0A;&lt;History&gt;&#x0A;&lt;historyRootNode&gt;&#x0A;&lt;infoNode path=&quot;/Stores/WebContent/apollo/views/account/AboutMeDisplay.jsp&quot; type=&quot;1&quot;/&gt;&#x0A;&lt;infoNode path=&quot;/StaticWeb/WebContent/unitTest/specHelper.js&quot; type=&quot;1&quot;/&gt;&#x0A;&lt;infoNode path=&quot;/StaticWeb/WebContent/checkout/base/js/modules/common/autoComplete.js&quot; type=&quot;1&quot;/&gt;&#x0A;&lt;infoNode path=&quot;/StaticWeb/WebContent/checkout/anf/js/checkoutV2.js&quot; type=&quot;1&quot;/&gt;&#x0A;&lt;infoNode path=&quot;/StaticWeb/WebContent/unitTest/checkout/spec/base/pages/checkoutSpec.js&quot; type=&quot;1&quot;/&gt;&#x0A;&lt;infoNode path=&quot;/StaticWeb/WebContent/checkout/base/js/pages/checkout.js&quot; type=&quot;1&quot;/&gt;&#x0A;&lt;/historyRootNode&gt;&#x0A;&lt;/History&gt;" key="History"/>
+		<section name="DialogBoundsSettings">
+			<item value="600" key="DIALOG_WIDTH"/>
+			<item value="105" key="DIALOG_Y_ORIGIN"/>
+			<item value="500" key="DIALOG_HEIGHT"/>
+			<item value="394" key="DIALOG_X_ORIGIN"/>
+			<item value="1|.Helvetica Neue DeskInterface|11.0|0|COCOA|1|.HelveticaNeueDeskInterface-Regular" key="DIALOG_FONT_NAME"/>
+		</section>
+	</section>
+	<section name="ExternalProjectImportWizard">
+		<item value="false" key="WizardProjectsImportPage.STORE_ARCHIVE_SELECTED"/>
+		<item value="false" key="WizardProjectsImportPage.STORE_COPY_PROJECT_ID"/>
+	</section>
+	<section name="ResourceNavigator">
+		<item value="Aggregate for window 1444918657092" key="ResourceWorkingSetFilter.STORE_WORKING_SET"/>
+		<item value="false" key="LINK_NAVIGATOR_TO_EDITOR"/>
+		<item value="1" key="ResourceViewer.STORE_SORT_TYPE"/>
+	</section>
+	<section name="org.eclipse.ui.internal.views.markers.FiltersConfigurationDialog">
+	</section>
+</section>

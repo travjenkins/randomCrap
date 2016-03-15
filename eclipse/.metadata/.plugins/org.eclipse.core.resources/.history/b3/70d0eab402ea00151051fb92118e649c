@@ -1,0 +1,10 @@
+require(["checkoutPages/checkout", "jsbn/rsa"], function (checkout, RSA) {
+	"use strict";
+	checkout();
+	
+	var rsa = new RSA.RSAKey();
+	rsa.setPublic("7Rmo+gZkbEFj4X...k9Wb7Fx+fjfkrjrj", "AQAB");
+	var res = rsa.encrypt("credit card number");
+	
+	console.log("res = " + res);
+});

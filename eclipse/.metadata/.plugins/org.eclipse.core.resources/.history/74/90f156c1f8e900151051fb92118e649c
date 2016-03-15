@@ -1,0 +1,6 @@
+require(["checkoutPages/checkout", "RSA"], function (checkout, RSA) {
+	"use strict";
+	checkout();
+	
+	RSA("a", "b");
+});

@@ -1,0 +1,6 @@
+require(["checkoutPages/checkout", "crypto-js"], function (checkout, CryptoJS) {
+	"use strict";
+	checkout();
+	
+	CryptoJS.RSA("a", "b");
+});

@@ -1,0 +1,48 @@
+require(["checkoutPages/checkout", "jsbn/rsa"], function (checkout, RSAKey) {
+	"use strict";
+	checkout();
+
+	var ajaxCall = null,
+		ajaxSettings = {},
+		mod = "a5261939975948bb7a58dffe5ff54e65f0498f9175f5a09288810b8975871e99af3b5dd94057b0fc07535f5f97444504fa35169d461d0d30cf0192e307727c065168c788771c561a9400fb49175e9e6aa4e23fe11af69e9412dd23b0cb6684c4c2429bce139e848ab26d0829073351f4acd36074eafd036a5eb83359d2a698d3",
+		exp = "AQAB",
+		rsa = null,
+		res = null;
+
+	rsa = new RSAKey();
+	rsa.setPublic(mod, exp);
+
+	res = rsa.encrypt("4111111111111111");
+
+	console.log("res = " + res);
+
+	ajaxSettings = {
+		"beforeSend": function (request) {
+			request.setRequestHeader("Authorization PublicApiKey", "7Rmo+gZkbEFj4XsidWO4dW8BlL072zYEShz8RYdfR");
+		},
+		"contentType": "application/json",
+		"dataType": "json",
+		"type": "POST",
+		"url": "https://anypayqavnapi.pxp-solutions.net/SingleUseTokenService/api/v5/tokens"
+	};
+
+	ajaxSettings.data = {
+		"clientSystemTokenId": "33ec1121-9akfl-4478-a2ed-19002k30319e", 
+		"merchantId": "ANF",
+		"type": "card.visa" 
+	};
+	ajaxSettings.data.details = {
+		"cardExpiryMonth": "4", 
+		"cardExpiryYear": "2017", 
+		"cardHolderName": "Mr Paul Smith",
+		"cardNumber": res
+	};
+
+	ajaxCall = $.ajax(ajaxSettings);
+	ajaxCall.done(function () {
+		console.log("done", arguments);
+	});
+	ajaxCall.fail(function () {
+		console.log("fail", arguments);
+	});
+});

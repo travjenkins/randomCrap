@@ -1,0 +1,78 @@
+var requirejs = require('requirejs');
+
+requirejs.config({
+	'baseUrl': '../',
+	'removeCombined': true,
+	'namespace': 'redesign',
+	'paths': {
+		//third party libs
+		'jquery': 'base/js/global/lib/jquery',
+		'progressbar': 'account/base/js/lib/progressbar',
+		'requireLib': 'base/js/global/common/lib/require',
+		'pinchzoom': 'catalog/base/js/lib/pinchzoom',
+		'jsbn': 'base/js/global/lib/jsbn',
+
+		//A&F Libs
+		'globalLib': 'base/js/global/lib',
+
+		//core
+		'coreModules': 'core/js/modules',
+		'coreModulesHelpers': 'core/js/modules/helpers',
+		'corePages': 'core/js/pages',
+		'coreSections': 'core/js/sections',
+		'coreServices': 'core/js/services',
+		'coreSectionHelpers': 'core/js/sections/helpers/main',
+
+		//global
+		'globalModules': 'global/base/js/modules',
+		'globalModulesHelpers': 'global/base/js/modules/helpers',
+		'globalPages': 'global/base/js/pages',
+		'globalSections': 'global/base/js/sections',
+		'globalServices': 'global/base/js/services',
+
+		//checkout
+		'checkoutMixins': 'checkout/base/js/mixins',
+		'checkoutModules': 'checkout/base/js/modules',
+		'checkoutModuleHelpers': 'checkout/base/js/modules/helpers/main',
+		'checkoutPages': 'checkout/base/js/pages',
+		'checkoutSections': 'checkout/base/js/sections',
+		'checkoutServices': 'checkout/base/js/services',
+
+		//account
+		'accountModuleHelpers': 'account/base/js/modules/helpers/main',
+		'accountModules': 'account/base/js/modules',
+		'accountPages': 'account/base/js/pages',
+		'accountSections': 'account/base/js/sections',
+		'accountServices': 'account/base/js/services',
+		'accountCommonServices': 'account/base/js/services/common',
+
+		//catalog
+		'catalogModules': 'catalog/base/js/modules',
+		'catalogModuleHelpers': 'catalog/base/js/modules/helpers/main',
+		'catalogPages': 'catalog/base/js/pages',
+		'catalogServices': 'catalog/base/js/services',
+		'catalogSections': 'catalog/base/js/sections'
+	},
+	'shim': {
+		'jquery': {
+			'deps': [],
+			'exports': '$'
+		},
+		'jsbn/jsbn': {
+			'deps': [],
+			'exports': 'JSBN'
+		},
+		'jsbn/prng4': {
+			'deps': [],
+			'exports': 'PRNG4'
+		},
+		'jsbn/rng': {
+			'deps': [],
+			'exports': 'RNG'
+		},
+		'jsbn/rsa': {
+			'deps': ['jsbn/jsbn', 'jsbn/prng4', 'jsbn/rng'],
+			'exports': 'RSA'
+		}
+	}
+});

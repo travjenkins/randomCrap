@@ -1,0 +1,968 @@
+define(["checkoutPages/checkout"], function (checkout) {
+	"use strict";
+
+	describe("The checkout page is the major enterance into the site for checkout", function () {
+		var currentlyTesting = null,
+			fakeSection = null,
+			mockElement = null,
+			mockSectionConfig = null,
+			sectionsObject = null;
+
+		beforeEach(function () {
+			currentlyTesting = null;
+			sectionsObject = {};
+			fakeSection = jasmine.createSpy("fakeSection");
+			mockElement = $("<div>This is a mock element</div>");
+			mockSectionConfig = {
+				"condition": null,
+				"section": null,
+				"settings": null
+			};
+		});
+
+		it("is a function that is available when required", function () {
+			expect(checkout).toEqual(jasmine.any(Function));
+		});
+
+		describe("it wires up starting functions", function () {
+			it("it will create the deffered object if it is not created", function () {
+				spyOn($, "Deferred").and.callThrough();
+				ANF.deferredStart = null;
+
+				checkout();
+
+				expect($.Deferred).toHaveBeenCalled();
+			});
+
+			it("by calling ANF.deferredStart's then function", function () {
+				spyOn(ANF.deferredStart, "then");
+
+				checkout();
+
+				expect(ANF.deferredStart.then).toHaveBeenCalled();
+			});
+
+			it("by calling ANF.deferredStart's then function with ANF.checkoutV2.init", function () {
+				spyOn(ANF.deferredStart, "then");
+
+				checkout();
+
+				expect(ANF.deferredStart.then).toHaveBeenCalledWith(ANF.checkoutV2.init);
+			});
+
+			it("by calling ANF.deferredStart's then function with ANF.checkoutV2.ajaxInContent", function () {
+				spyOn(ANF.deferredStart, "then");
+
+				checkout();
+
+				expect(ANF.deferredStart.then).toHaveBeenCalledWith(ANF.checkoutV2.ajaxInContent);
+			});
+		});
+
+		describe("it will populate the global ANF.checkoutV2", function () {
+			var availableObjects = null;
+
+			beforeEach(function () {
+				checkout();
+
+				availableObjects = {
+					init : jasmine.any(Function),
+					ajaxInContent : jasmine.any(Function)
+				};
+
+				ANF.params.storeAttributes.checkoutV2.shippingMethod = {};
+				ANF.params.storeAttributes.checkoutV2.shippingMethod.enabled = true;
+
+				ANF.params.storeAttributes.checkoutV2.shippingAddress = {};
+				ANF.params.storeAttributes.checkoutV2.shippingAddress.enabled = true;
+
+				ANF.params.storeAttributes.checkoutV2.shippingAddress.guestUser = {};
+				ANF.params.storeAttributes.checkoutV2.shippingAddress.guestUser.enabled = true;
+
+				ANF.params.storeAttributes.checkoutV2.shippingAddress.loggedInUser = {};
+				ANF.params.storeAttributes.checkoutV2.shippingAddress.loggedInUser.enabled = true;
+
+
+				ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook = {};
+				ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook.enabled = true;
+			});
+
+			it("as a function (that returns itself) after being run", function () {
+				expect(ANF.checkoutV2).toEqual(jasmine.any(Object));
+			});
+
+			describe("which contains init", function () {
+				beforeEach(function () {
+					spyOn($.fn, "attr").and.returnValue("checkout");
+				});
+
+				it("which is a function", function () {
+					expect(ANF.checkoutV2.init).toEqual(availableObjects.init);
+				});
+
+				describe("if ANF.params.storeAttributes.checkoutV2.enabled is true", function () {
+					beforeEach(function () {
+						ANF.params.storeAttributes.checkoutV2.enabled = true;
+					});
+
+					describe("which starts up the sections by calling", function () {
+						it("the startUpSections functions", function () {
+							spyOn(ANF.checkoutV2, "startUpSections");
+
+							ANF.checkoutV2.init();
+
+							expect(ANF.checkoutV2.startUpSections).toHaveBeenCalled();
+						});
+					});
+				});
+
+				describe("if ANF.params.storeAttributes.checkoutV2.enabled is false", function () {
+					beforeEach(function () {
+						ANF.params.storeAttributes.checkoutV2.enabled = false;
+					});
+
+					it("it will start up nothing", function () {
+						spyOn(ANF.checkoutV2, "startUpSections");
+						ANF.checkoutV2.sections = {
+							"condition": true,
+							"section": null
+						};
+
+						ANF.checkoutV2.init();
+
+						expect(ANF.checkoutV2.startUpSections).not.toHaveBeenCalled();
+					});
+				});
+			});
+
+			describe("which contains ajaxInContent", function () {
+				beforeEach(function () {
+					spyOn($.fn, "trigger");
+				});
+
+				it("which is a function", function () {
+					expect(ANF.checkoutV2.ajaxInContent).toEqual(availableObjects.ajaxInContent);
+				});
+
+				it("will trigger to load shipping if on shipping", function () {
+					spyOn(ANF.checkoutV2.conditionals, "isShipping").and.returnValue(true);
+
+					ANF.checkoutV2.ajaxInContent();
+
+					expect($.fn.trigger).toHaveBeenCalledWith("shipping:load");
+				});
+
+				xit("will trigger to load shipping if on summary", function () {
+					spyOn(ANF.checkoutV2.conditionals, "isSummary").and.returnValue(true);
+
+					ANF.checkoutV2.ajaxInContent();
+
+					expect($.fn.trigger).toHaveBeenCalledWith("shipping:load");
+				});
+
+				it("will trigger to load informational section if on receipt", function () {
+					spyOn(ANF.checkoutV2.conditionals, "isReceiptPage").and.returnValue(true);
+
+					ANF.checkoutV2.ajaxInContent();
+
+					expect($.fn.trigger).toHaveBeenCalledWith("informational:load");
+				});
+
+				it("will trigger to load informational section if NOT on receipt", function () {
+					spyOn(ANF.checkoutV2.conditionals, "isReceiptPage").and.returnValue(false);
+
+					ANF.checkoutV2.ajaxInContent();
+
+					expect($.fn.trigger).not.toHaveBeenCalledWith("informational:load");
+				});
+
+				it("will trigger to load loyalty if on receipt and loyalty is turned on", function () {
+					spyOn(ANF.checkoutV2.conditionals, "isReceiptPage").and.returnValue(true);
+					spyOn(ANF.checkoutV2.conditionals, "isLoyalty").and.returnValue(true);
+
+					ANF.checkoutV2.ajaxInContent();
+
+					expect($.fn.trigger).toHaveBeenCalledWith("loyalty:load");
+				});
+
+				it("will no trigger loading loyality if loyalty is turned OFF", function () {
+					spyOn(ANF.checkoutV2.conditionals, "isReceiptPage").and.returnValue(true);
+					spyOn(ANF.checkoutV2.conditionals, "isLoyalty").and.returnValue(false);
+
+					ANF.checkoutV2.ajaxInContent();
+
+					expect($.fn.trigger).not.toHaveBeenCalledWith("loyalty:load");
+				});
+
+				it("will trigger to load cart if on shopping bag", function () {
+					spyOn(ANF.checkoutV2.conditionals, "isShoppingBag").and.returnValue(true);
+
+					ANF.checkoutV2.ajaxInContent();
+
+					expect($.fn.trigger).toHaveBeenCalledWith("cart:load");
+				});
+
+				it("will trigger to load cart if NOT on shopping bag", function () {
+					spyOn(ANF.checkoutV2.conditionals, "isShoppingBag").and.returnValue(false);
+
+					ANF.checkoutV2.ajaxInContent();
+
+					expect($.fn.trigger).toHaveBeenCalledWith("summary:load");
+				});
+			});
+
+			describe("which contains conditional", function () {
+				it("which is a function", function () {
+					expect(ANF.checkoutV2.conditional).toEqual(availableObjects.conditional);
+				});
+			});
+
+			describe("which contains the sections object", function () {
+				beforeEach(function () {
+					checkout();
+
+					sectionsObject = {
+						"addressBook": {
+							"condition": ANF.checkoutV2.conditionals.hasCheckoutV2.addressBook,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "#address-book-wrapper"
+							}
+						},
+						"addressBookModal": {
+							"condition": ANF.checkoutV2.conditionals.hasCheckoutV2.addressBook,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": ".simplemodal-container"
+							}
+						},
+						"addressMessage": {
+							"condition": ANF.checkoutV2.conditionals.hasCheckoutV2.addressForm,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": ".shipping-address"
+							}
+						},
+						"body": {
+							"condition": ANF.checkoutV2.conditionals.isCheckout,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "body.checkoutV2"
+							}
+						},
+						"cart": {
+							"condition": ANF.checkoutV2.conditionals.isShoppingBag,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "#checkout-cart",
+								"isLoyalty": ANF.checkoutV2.conditionals.isLoyalty(),
+								"rewardsSectionExists": ANF.checkoutV2.conditionals.hasRewardsSection()
+							}
+						},
+						"header": {
+							"condition": true,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "#header-nav"
+							}
+						},
+						"contactInfo": {
+							"condition": ANF.checkoutV2.conditionals.hasContactInfoSection,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "#billing-contact-info"
+							}
+						},
+						"informational": {
+							"condition": ANF.checkoutV2.conditionals.isReceiptPage,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": ".user-info",
+								"isLoyalty": ANF.checkoutV2.conditionals.isLoyalty(),
+								"estimatedPointsExists": ANF.checkoutV2.conditionals.hasEstimatedPointsSection()
+							}
+						},
+						"loyalty": {
+							"condition": ANF.checkoutV2.conditionals.isLoyalty,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": ".loyalty",
+								"isLoyalty": ANF.checkoutV2.conditionals.isLoyalty(),
+								"potentialPointsExists": ANF.checkoutV2.conditionals.hasPotentialPointsSection()
+							}
+						},
+						"payment": {
+							"condition": ANF.checkoutV2.conditionals.isPaymentPage,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "#payment-options"
+							}
+						},
+						"summary": {
+							"condition": !ANF.checkoutV2.conditionals.isShoppingBag(),
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": ".promotions, #rewards, .shopping-bag-wrap, #price-summary-wrapper",
+								"isLoyalty": ANF.checkoutV2.conditionals.isLoyalty(),
+								"rewardsSectionExists": ANF.checkoutV2.conditionals.hasRewardsSection()
+							}
+						},
+						"shippingWithTabs": {
+							"condition": ANF.checkoutV2.conditionals.isShipping,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "#shipping-tabs"
+							}
+						},
+						"billing": {
+							"condition": ANF.checkoutV2.conditionals.hasBillingAddressSection,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "#billing"
+							}
+						},
+						"paymentConfirmation": {
+							"condition": ANF.checkoutV2.conditionals.isCheckoutStep3,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "#checkout-summary"
+							}
+						},
+						"shippingConfirmation": {
+							"condition": ANF.checkoutV2.conditionals.isReceiptPage,
+							"section": jasmine.any(Function),
+							"settings": {
+								"scope": "#shipping-options"
+							}
+						},
+						"address": jasmine.any(Function),
+						"shipping": jasmine.any(Function)
+					};
+				});
+
+				it("has the property settings", function () {
+					expect(ANF.checkoutV2.sections).toEqual(sectionsObject);
+				});
+
+				describe("Contains address", function () {
+					beforeEach(function () {
+						checkout();
+					});
+
+					it("which is a public function", function () {
+						expect(ANF.checkoutV2.sections.address).toEqual(jasmine.any(Function));
+					});
+
+					it("will return nothing when called", function () {
+						expect(ANF.checkoutV2.sections.address()).toBeUndefined();
+					});
+
+					describe("when conditionals.hasCheckoutV2.addressForm is returning true", function () {
+						beforeEach(function () {
+							spyOn(ANF.checkoutV2.conditionals.hasCheckoutV2, "addressForm").and.returnValue(true);
+						});
+
+						it("it will start up the address section and populate the global object ANF.checkoutV2.address", function () {
+							ANF.checkoutV2.sections.address();
+
+							expect(ANF.checkoutV2.address).toBeDefined();
+						});
+					});
+
+					describe("when conditionals.hasCheckoutV2.shippingMethods is returning true", function () {
+						beforeEach(function () {
+							spyOn(ANF.checkoutV2.conditionals.hasCheckoutV2, "shippingMethods").and.returnValue(true);
+						});
+
+						it("it will start up the address section and populate the global object ANF.checkoutV2.address", function () {
+							ANF.checkoutV2.sections.address();
+
+							expect(ANF.checkoutV2.address).toBeDefined();
+						});
+					});
+
+					describe("when conditionals.hasCheckoutV2.shippingMethods AND conditionals.hasCheckoutV2.addressForm is returning false", function () {
+						beforeEach(function () {
+							spyOn(ANF.checkoutV2.conditionals.hasCheckoutV2, "addressForm").and.returnValue(false);
+							spyOn(ANF.checkoutV2.conditionals.hasCheckoutV2, "shippingMethods").and.returnValue(false);
+						});
+
+						it("it will not populate the object ANF.checkoutV2.address", function () {
+							ANF.checkoutV2.sections.address();
+
+							expect(ANF.checkoutV2.address).toBeUndefined();
+						});
+					});
+				});
+
+				describe("Contains shipping", function () {
+					beforeEach(function () {
+						checkout();
+					});
+
+					it("which is a public function", function () {
+						expect(ANF.checkoutV2.sections.shipping).toEqual(jasmine.any(Function));
+					});
+
+					it("will return nothing when called", function () {
+						expect(ANF.checkoutV2.sections.shipping()).toBeUndefined();
+					});
+
+					describe("when conditionals.hasCheckoutV2.shippingMethods is returning true", function () {
+						beforeEach(function () {
+							spyOn(ANF.checkoutV2.conditionals.hasCheckoutV2, "shippingMethods").and.returnValue(true);
+						});
+
+						it("it will start up the address section and populate the global object ANF.checkoutV2.shipping", function () {
+							ANF.checkoutV2.sections.shipping();
+
+							expect(ANF.checkoutV2.shipping).toBeDefined();
+						});
+					});
+
+					describe("when conditionals.hasCheckoutV2.shippingMethods is returning false", function () {
+						beforeEach(function () {
+							spyOn(ANF.checkoutV2.conditionals.hasCheckoutV2, "shippingMethods").and.returnValue(false);
+						});
+
+						it("it will not populate the object ANF.checkoutV2.address", function () {
+							ANF.checkoutV2.sections.shipping();
+
+							expect(ANF.checkoutV2.address).toBeUndefined();
+						});
+					});
+				});
+			});
+		});
+
+		describe("contains defaultSectionStart", function () {
+			var spy = null,
+				sectionSpy = null;
+
+			beforeEach(function () {
+				checkout();
+
+				spy = jasmine.createSpy();
+				sectionSpy = jasmine.createSpyObj("sectionSpy", ["section", "settings"]);
+			});
+
+			it("a function used to start up section objects", function () {
+				expect(ANF.checkoutV2.defaultSectionStart).toEqual(jasmine.any(Function));
+			});
+
+			it("which calls the section that was passed to it", function () {
+				var spy = jasmine.createSpyObj("spy", ["section"]);
+
+				ANF.checkoutV2.defaultSectionStart("sectionName", spy);
+
+				expect(spy.section).toHaveBeenCalled();
+			});
+
+			it("it will call the global init if available", function () {
+				ANF.checkoutV2.thisIsAFakeObject = {};
+				ANF.checkoutV2.thisIsAFakeObject.init = spy;
+
+				ANF.checkoutV2.defaultSectionStart("thisIsAFakeObject", sectionSpy);
+
+				expect(spy).toHaveBeenCalled();
+			});
+
+			it("it will run a section's subscribe if it is available", function () {
+				var fakeSubscribe = jasmine.createSpy("fooBar");
+
+				mockSectionConfig.section = function () {};
+
+				ANF.checkoutV2.foo = mockSectionConfig;
+				ANF.checkoutV2.foo.subscribe = fakeSubscribe;
+
+				ANF.checkoutV2.defaultSectionStart("foo", mockSectionConfig);
+
+				expect(fakeSubscribe).toHaveBeenCalled();
+			});
+		});
+
+		describe("contains startUpSections", function () {
+			beforeEach(function () {
+				checkout();
+			});
+
+			it("a public function", function () {
+				expect(ANF.checkoutV2.startUpSections).toEqual(jasmine.any(Function));
+			});
+
+			describe("it loops through all the sections contained in the page", function () {
+				beforeEach(function () {
+					spyOn(ANF.checkoutV2, "defaultSectionStart");
+					mockSectionConfig.section = fakeSection;
+				});
+
+				it("and calls 'defaultSectionStart' with the section if the condition is true", function () {
+					mockSectionConfig.condition = true;
+
+					ANF.checkoutV2.startUpSections({
+						"foo": mockSectionConfig
+					});
+
+					expect(ANF.checkoutV2.defaultSectionStart).toHaveBeenCalledWith("foo", mockSectionConfig);
+				});
+
+				it("and calls 'defaultSectionStart' with the section if the condition is a function and returns true", function () {
+					mockSectionConfig.condition = function () {
+						return true;
+					};
+					ANF.checkoutV2.startUpSections({
+						"foo": mockSectionConfig
+					});
+
+					expect(ANF.checkoutV2.defaultSectionStart).toHaveBeenCalledWith("foo", mockSectionConfig);
+				});
+
+				it("and does not call 'defaultSectionStart' with the section if the condition is false", function () {
+					mockSectionConfig.condition = false;
+
+					ANF.checkoutV2.startUpSections({
+						"foo": mockSectionConfig
+					});
+
+					expect(ANF.checkoutV2.defaultSectionStart).not.toHaveBeenCalled();
+				});
+
+				it("and does not call 'defaultSectionStart' with the section if the condition is something other than boolean or function", function () {
+					mockSectionConfig.condition = NaN;
+
+					ANF.checkoutV2.startUpSections({
+						"foo": mockSectionConfig
+					});
+
+					expect(ANF.checkoutV2.defaultSectionStart).not.toHaveBeenCalled();
+				});
+			});
+
+			it("if the section is a function then it will call it instead of the default", function () {
+				ANF.checkoutV2.startUpSections({
+					"foo": fakeSection
+				});
+
+				expect(fakeSection).toHaveBeenCalled();
+			});
+
+			describe("nothing will run", function () {
+				beforeEach(function () {
+					spyOn(ANF.checkoutV2, "defaultSectionStart");
+				});
+
+				it("if the section is null", function () {
+
+					ANF.checkoutV2.startUpSections({
+						"foo": null
+					});
+
+					expect(ANF.checkoutV2.defaultSectionStart).not.toHaveBeenCalled();
+				});
+
+				it("if the section is something other than a function or object", function () {
+					ANF.checkoutV2.startUpSections({
+						"foo": undefined
+					});
+
+					expect(ANF.checkoutV2.defaultSectionStart).not.toHaveBeenCalled();
+				});
+
+				it("if someone adds something to the prototype of the sections object", function () {
+					spyOn(Object.prototype, 'hasOwnProperty').and.returnValue(false);
+
+					ANF.checkoutV2.startUpSections({
+						"foo": undefined
+					});
+
+					expect(ANF.checkoutV2.defaultSectionStart).not.toHaveBeenCalled();
+				});
+			});
+		});
+
+		describe("contains conditionals", function () {
+			beforeEach(function () {
+				checkout();
+			});
+
+			describe("contains isCheckout", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.isCheckout).toEqual(jasmine.any(Function));
+				});
+
+				it("returns false the bodyID does NOT contain 'summary'", function () {
+					expect(ANF.checkoutV2.conditionals.isCheckout()).toBe(false);
+				});
+			});
+
+			describe("contains isPaymentPage", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.isPaymentPage).toEqual(jasmine.any(Function));
+				});
+
+				it("returns false the bodyID does NOT contain 'payment'", function () {
+					expect(ANF.checkoutV2.conditionals.isPaymentPage()).toBe(false);
+				});
+			});
+
+			describe("contains isCheckoutStep3", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.isCheckoutStep3).toEqual(jasmine.any(Function));
+				});
+
+				it("returns false the bodyID does NOT contain 'checkout-summary'", function () {
+					expect(ANF.checkoutV2.conditionals.isCheckoutStep3()).toBe(false);
+				});
+			});
+
+			describe("contains isSummary", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.isSummary).toEqual(jasmine.any(Function));
+				});
+
+				it("returns false the bodyID does NOT contain 'summary'", function () {
+					ANF.params.storeAttributes.loyalty.enabled = true;
+
+					expect(ANF.checkoutV2.conditionals.isSummary()).toBe(false);
+				});
+			});
+
+			describe("contains isLoyalty", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.isLoyalty).toEqual(jasmine.any(Function));
+				});
+
+				it("returns true when ANF.params.storeAttributes.loyalty.enabled is true", function () {
+					ANF.params.storeAttributes.loyalty.enabled = true;
+
+					expect(ANF.checkoutV2.conditionals.isLoyalty()).toBe(true);
+				});
+
+				it("returns false when ANF.params.storeAttributes.loyalty.enabled is false", function () {
+					ANF.params.storeAttributes.loyalty.enabled = false;
+
+					expect(ANF.checkoutV2.conditionals.isLoyalty()).toBe(false);
+				});
+
+				it("returns false when ANF.params.storeAttributes.loyalty.enabled is null", function () {
+					ANF.params.storeAttributes.loyalty.enabled = null;
+
+					expect(ANF.checkoutV2.conditionals.isLoyalty()).toBe(false);
+				});
+			});
+
+			describe("contains hasRewardsSection", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.hasRewardsSection).toEqual(jasmine.any(Function));
+				});
+
+				it("queries for the '#rewards' element", function () {
+					spyOn($.fn, "init");
+
+					ANF.checkoutV2.conditionals.hasRewardsSection();
+
+					expect($.fn.init).toHaveBeenCalledWith("#rewards", undefined);
+				});
+
+				it("returns true when there is a '#rewards' element found", function () {
+					spyOn($.fn, "init").and.returnValue([{},{},{}]);
+
+					expect(ANF.checkoutV2.conditionals.hasRewardsSection()).toBe(true);
+				});
+			});
+
+			describe("contains hasEstimatedPointsSection", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.hasEstimatedPointsSection).toEqual(jasmine.any(Function));
+				});
+
+				it("queries for the '.estimated-reward-points' element", function () {
+					spyOn($.fn, "init");
+
+					ANF.checkoutV2.conditionals.hasEstimatedPointsSection();
+
+					expect($.fn.init).toHaveBeenCalledWith(".estimated-reward-points", undefined);
+				});
+
+				it("returns true when there is a '.estimated-reward-points' element found", function () {
+					spyOn($.fn, "init").and.returnValue([{},{},{}]);
+
+					expect(ANF.checkoutV2.conditionals.hasEstimatedPointsSection()).toBe(true);
+				});
+			});
+
+			describe("contains hasPotentialPointsSection", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.hasPotentialPointsSection).toEqual(jasmine.any(Function));
+				});
+
+				it("queries for the '.potential-reward-points' element", function () {
+					spyOn($.fn, "init");
+
+					ANF.checkoutV2.conditionals.hasPotentialPointsSection();
+
+					expect($.fn.init).toHaveBeenCalledWith(".potential-reward-points", undefined);
+				});
+
+				it("returns true when there is a '.potential-reward-points' element found", function () {
+					spyOn($.fn, "init").and.returnValue([{},{},{}]);
+
+					expect(ANF.checkoutV2.conditionals.hasPotentialPointsSection()).toBe(true);
+				});
+			});
+
+			describe("contains hasContactInfoSection", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.hasContactInfoSection).toEqual(jasmine.any(Function));
+				});
+
+				it("queries for the '#billing-contact-info' element", function () {
+					spyOn($.fn, "init");
+
+					ANF.checkoutV2.conditionals.hasContactInfoSection();
+
+					expect($.fn.init).toHaveBeenCalledWith("#billing-contact-info", undefined);
+				});
+
+				it("returns true when there is a '#billing-contact-info' element found", function () {
+					spyOn($.fn, "init").and.returnValue([{},{},{}]);
+
+					expect(ANF.checkoutV2.conditionals.hasContactInfoSection()).toBe(true);
+				});
+			});
+
+			describe("contains hasBillingAddressSection", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.hasBillingAddressSection).toEqual(jasmine.any(Function));
+				});
+
+				it("queries for the '#billing' element", function () {
+					spyOn($.fn, "init");
+
+					ANF.checkoutV2.conditionals.hasBillingAddressSection();
+
+					expect($.fn.init).toHaveBeenCalledWith("#billing", undefined);
+				});
+
+				it("returns true when there is a '#billing' element found", function () {
+					spyOn($.fn, "init").and.returnValue([{},{},{}]);
+
+					expect(ANF.checkoutV2.conditionals.hasBillingAddressSection()).toBe(true);
+				});
+			});
+
+			describe("contains isCheckoutStep3", function () {
+				it("a public function", function () {
+					expect(ANF.checkoutV2.conditionals.isCheckoutStep3).toEqual(jasmine.any(Function));
+				});
+			});
+
+			describe("contains hasCheckoutV2", function () {
+				describe("contains addressBook", function () {
+					describe("will return false", function () {
+						it("when publicMembers.conditionals.isLoggedIn is returning false", function () {
+							spyOn(ANF.checkoutV2.conditionals, "isLoggedIn").and.returnValue(false);
+
+							expect(ANF.checkoutV2.conditionals.hasCheckoutV2.addressBook()).toBe(false);
+						});
+
+						it("when publicMembers.conditionals.isLoggedIn is returning false and " +
+								"publicMembers.conditionals.hasCheckoutV2.addressForm", function () {
+							spyOn(ANF.checkoutV2.conditionals, "isLoggedIn").and.returnValue(false);
+							spyOn(ANF.checkoutV2.conditionals.hasCheckoutV2, "addressForm").and.returnValue(false);
+
+							expect(ANF.checkoutV2.conditionals.hasCheckoutV2.addressBook()).toBe(false);
+						});
+						it("when publicMembers.conditionals.isLoggedIn is returning false and " +
+								"publicMembers.conditionals.hasCheckoutV2.addressForm is returning false and" +
+								"ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook.enabled is false and", function () {
+							spyOn(ANF.checkoutV2.conditionals, "isLoggedIn").and.returnValue(false);
+							spyOn(ANF.checkoutV2.conditionals.hasCheckoutV2, "addressForm").and.returnValue(false);
+
+							ANF.params.storeAttributes.checkoutV2.shippingAddress = {};
+							ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook = {};
+							ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook.enabled = false;
+
+							expect(ANF.checkoutV2.conditionals.hasCheckoutV2.addressBook()).toBe(false);
+						});
+					});
+
+					describe("will return true", function () {
+						it("when publicMembers.conditionals.isLoggedIn is returning false and " +
+								"publicMembers.conditionals.hasCheckoutV2.addressForm is returning true and" +
+								"ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook.enabled is true and", function () {
+							spyOn(ANF.checkoutV2.conditionals, "isLoggedIn").and.returnValue(false);
+							spyOn(ANF.checkoutV2.conditionals.hasCheckoutV2, "addressForm").and.returnValue(true);
+
+							ANF.params.storeAttributes.checkoutV2.shippingAddress = {};
+							ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook = {};
+							ANF.params.storeAttributes.checkoutV2.shippingAddress.addressBook.enabled = true;
+
+							expect(ANF.checkoutV2.conditionals.hasCheckoutV2.addressBook()).toBe(true);
+						});
+					});
+				});
+
+				describe("contains shippingMethods", function () {
+					it("a public function", function () {
+						expect(ANF.checkoutV2.conditionals.hasCheckoutV2.shippingMethods).toEqual(jasmine.any(Function));
+					});
+
+					it("returns true when ANF.params.storeAttributes.checkoutV2.shippingMethod.enabled = true and the DOM has a shipping method's container", function () {
+						ANF.params.storeAttributes.checkoutV2.shippingMethod = {};
+						ANF.params.storeAttributes.checkoutV2.shippingMethod.enabled = true;
+
+						spyOn($.fn, "init").and.returnValue([{},{},{}]);
+
+						expect(ANF.checkoutV2.conditionals.hasCheckoutV2.shippingMethods()).toBe(true);
+					});
+
+					it("returns false when ANF.params.storeAttributes.checkoutV2.shippingMethod.enabled is null", function () {
+						ANF.params.storeAttributes.checkoutV2.shippingMethod = {};
+						ANF.params.storeAttributes.checkoutV2.shippingMethod.enabled = null;
+
+						expect(ANF.checkoutV2.conditionals.hasCheckoutV2.shippingMethods()).toBe(false);
+					});
+
+					it("returns false when ANF.params.storeAttributes.checkoutV2.shippingMethod is null", function () {
+						ANF.params.storeAttributes.checkoutV2.shippingMethod = null;
+
+						expect(ANF.checkoutV2.conditionals.hasCheckoutV2.shippingMethods()).toBe(false);
+					});
+
+					it("returns false when the DOM doesn't have a shipping methods container", function () {
+						spyOn($.fn, "init").and.returnValue([]);
+
+						expect(ANF.checkoutV2.conditionals.hasCheckoutV2.shippingMethods()).toBe(false);
+					});
+				});
+
+				describe("contains addressForm", function () {
+					it("a public function", function () {
+						expect(ANF.checkoutV2.conditionals.hasCheckoutV2.addressForm).toEqual(jasmine.any(Function));
+					});
+
+					describe("which returns false when", function () {
+						it("ANF.params.storeAttributes.checkoutV2.shippingAddress is undefined", function () {
+							ANF.params.storeAttributes.checkoutV2.shippingAddress = undefined;
+
+							expect(ANF.checkoutV2.conditionals.hasCheckoutV2.addressForm()).toBe(false);
+						});
+					});
+
+					describe("when", function () {
+						describe("publicMembers.conditionals.isShipping() is returning true", function () {
+							beforeEach(function () {
+								spyOn(ANF.checkoutV2.conditionals, "isShipping").and.returnValue(true);
+							});
+
+							describe("and ANF.params.storeAttributes.checkoutV2.shippingAddress.enabled is true", function () {
+								beforeEach(function () {
+									ANF.params.storeAttributes.checkoutV2.shippingAddress = {
+										"enabled": true
+									};
+								});
+
+								describe("and the new form is found", function () {
+									beforeEach(function () {
+										spyOn($.fn, "init").and.returnValue(mockElement);
+									});
+
+									describe("and either", function () {
+										describe("the user is logged in and loggedIn is enabled", function () {
+											beforeEach(function () {
+												spyOn(ANF.checkoutV2.conditionals, "isLoggedIn").and.returnValue(true);
+
+												ANF.params.storeAttributes.checkoutV2.shippingAddress.loggedInUser = {
+													"enabled": true
+												};
+											});
+
+											it("it returns true", function () {
+												expect(ANF.checkoutV2.conditionals.hasCheckoutV2.addressForm()).toBe(true);
+											});
+										});
+
+										describe("the user is logged out and guest is enabled", function () {
+											beforeEach(function () {
+												spyOn(ANF.checkoutV2.conditionals, "isLoggedIn").and.returnValue(false);
+
+												ANF.params.storeAttributes.checkoutV2.shippingAddress.guestUser = {
+													"enabled": true
+												};
+											});
+
+											it("it returns true", function () {
+												expect(ANF.checkoutV2.conditionals.hasCheckoutV2.addressForm()).toBe(true);
+											});
+										});
+									});
+								});
+							});
+						});
+					});
+				});
+			});
+		});
+
+		describe("contains the object legacyReplacements to house all the functions we use in the legacyMapper", function () {
+			beforeEach(function () {
+				checkout();
+			});
+
+			it("it is an object", function () {
+				expect(currentlyTesting).toEqual(jasmine.any(Object));
+			});
+
+			describe("it contains updateShippingForm", function () {
+				beforeEach(function () {
+					ANF.checkoutV2.address = {
+						"load": {
+							"addressFormContent": function () {
+								return mockElement;
+							}
+						}
+					};
+
+					currentlyTesting = ANF.checkoutV2.legacyReplacements;
+				});
+
+				it("which is a function", function () {
+					expect(currentlyTesting.updateShippingForm).toEqual(jasmine.any(Function));
+				});
+
+				it("when called it will return an AJAX response so the legacy code can continue runnign when thens", function () {
+					expect(currentlyTesting.updateShippingForm()).toEqual(mockElement);
+				});
+
+				it("when called from popins we need to fake we made the call and just return true", function () {
+					expect(currentlyTesting.updateShippingForm({
+						"isPopinsCall": true
+					})).toEqual(true);
+				});
+			});
+
+			describe("it contains updateShippingMethod", function () {
+				beforeEach(function () {
+					ANF.checkoutV2.shipping = {
+						"load": {
+							"shippingMethodsContent": function () {
+								return mockElement;
+							}
+						}
+					};
+
+					currentlyTesting = ANF.checkoutV2.legacyReplacements;
+				});
+
+				it("which is a function", function () {
+					expect(currentlyTesting.updateShippingMethod).toEqual(jasmine.any(Function));
+				});
+
+				it("when called it will return an AJAX response so the legacy code can continue runnign when thens", function () {
+					expect(currentlyTesting.updateShippingMethod()).toEqual(mockElement);
+				});
+			});
+		});
+	});
+});

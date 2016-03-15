@@ -1,0 +1,17 @@
+eclipse.preferences.version=1
+org.eclipse.wst.jsdt.core.classpath.exclusionPatterns.default=**/*.js, **/*.min.js,**/node_modules/*,**/bower_components/*
+org.eclipse.wst.jsdt.core.codeComplete.argumentPrefixes=
+org.eclipse.wst.jsdt.core.codeComplete.argumentSuffixes=
+org.eclipse.wst.jsdt.core.codeComplete.localPrefixes=
+org.eclipse.wst.jsdt.core.codeComplete.localSuffixes=
+org.eclipse.wst.jsdt.core.codeComplete.visibilityCheck=enabled
+org.eclipse.wst.jsdt.core.compiler.problem.emptyStatement=warning
+org.eclipse.wst.jsdt.core.compiler.problem.fallthroughCase=error
+org.eclipse.wst.jsdt.core.compiler.problem.noEffectAssignment=error
+org.eclipse.wst.jsdt.core.compiler.problem.optionalSemicolon=error
+org.eclipse.wst.jsdt.core.compiler.problem.parameterAssignment=error
+org.eclipse.wst.jsdt.core.compiler.problem.undocumentedEmptyBlock=warning
+org.eclipse.wst.jsdt.core.compiler.problem.uninitializedLocalVariable=error
+org.eclipse.wst.jsdt.core.compiler.problem.unusedLocal=error
+org.eclipse.wst.jsdt.core.timeoutForParameterNameFromAttachedJavadoc=50
+semanticValidation=enabled
